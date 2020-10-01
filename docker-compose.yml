@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+  php:
+    image: php:7.4-apache
+    container_name: php_wordpress
+    env_file:
+      - ./app/wordpress/.env.local
+    volumes:
+      - ./app/wordpress:/var/www/wordpress
+    depends_on:
+      - db
+
+  apache:
+    build:
+      context: ./docker/build/apache
+    container_name: apache_wordpress
+    ports:
+      - "81:80"
+    depends_on:
+      - db
+    env_file:
+      - ./app/wordpress/.env.local
+    volumes:
+      - ./docker/etc/apache/virtualhost.conf:/etc/apache2/sites-enabled/000-default.conf:ro
+      - ./docker/etc/php/php.ini:/usr/local/etc/php/php.ini
+      - ./docker/etc/php/php-cli.ini:/usr/local/etc/php/php-cli.ini
+      - ./app/wordpress:/var/www/wordpress
+
+  db:
+    image: mysql:5.7
+    container_name: mysql_wordpress
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./docker/etc/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./data:/data
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DATABASE=wordpress
+
+  phpmyadmin:
+    ports:
+      - "8002:80"
+    image: nazarpc/phpmyadmin
+    container_name: pma_wordpress
+    environment:
+      - PMA_HOST=db
+    depends_on:
+      - db
